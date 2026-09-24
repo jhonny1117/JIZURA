@@ -1,0 +1,26 @@
+name: Build JIZURA
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Build browser version
+        run: python3 build.py
+
+      - name: Upload built JIZURA
+        uses: actions/upload-artifact@v4
+        with:
+          name: JIZURA-custom
+          path: index.html
