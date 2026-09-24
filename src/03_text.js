@@ -108,6 +108,88 @@ function drawItemLayered(env, it) {
 
 /* draw one text item. env = {ctx, pass, passColor, scale}. Returns design-space bbox + glyph boxes. */
 J.drawItem = (env, it) => {
+
+       /* MMD dance video mode */
+    const danceOn = document.getElementById('danceOn');
+    const danceVideo = J._danceVideo;
+
+    if (danceOn && danceOn.checked && danceVideo && danceVideo.readyState >= 2) {
+      const ctx = env.ctx;
+
+      const vw = danceVideo.videoWidth || 1920;
+      const vh = danceVideo.videoHeight || 1080;
+
+      /* 元の文字レイアウトから位置とアニメーションを取得 */
+      const lay = it.lay || J.layoutText(it);
+      const g = lay && lay.find(x => x.ch !== ' ' && x.ch !== '');
+
+      if (g) {
+        const c = it.charFn ? it.charFn(g.i, g, lay.N) : null;
+        if (!(c && c.hide)) {
+          const a = (it.alpha ?? 1) * (c && c.a != null ? c.a : 1);
+
+          if (a > 0.002) {
+            const sx = it.sx || 1;
+            const sy = it.sy || 1;
+
+            const gx = g.x * sx + g.vx * sx + (c ? c.dx || 0 : 0);
+            const gy = g.y * sy + g.vy * sy + (c ? c.dy || 0 : 0);
+
+            const crot = (c ? c.rot || 0 : 0) + (g.r90 ? 90 : 0);
+            const csx = sx * (c && c.sx != null ? c.sx : 1);
+            const csy = sy * (c && c.sy != null ? c.sy : 1);
+
+            /*
+             * 動画の高さを文字サイズ基準にする。
+             * 後で倍率調整UIを追加可能。
+             */
+            const h = Math.max(1, it.size * 3);
+            const w = h * (vw / vh);
+
+            ctx.save();
+
+            ctx.translate(it.x, it.y);
+
+            if (it.rot)
+              ctx.rotate(it.rot * J.DEG);
+
+            if (it.skew)
+              ctx.transform(1, 0, Math.tan(it.skew * J.DEG), 1, 0, 0);
+
+            if (it.blend)
+              ctx.globalCompositeOperation = it.blend;
+
+            ctx.translate(gx, gy);
+
+            if (crot)
+              ctx.rotate(crot * J.DEG);
+
+            ctx.scale(csx, csy);
+            ctx.globalAlpha = a;
+
+            ctx.drawImage(
+              danceVideo,
+              -w / 2,
+              -h / 2,
+              w,
+              h
+            );
+
+            ctx.restore();
+
+            return {
+              x0: it.x + gx - w / 2,
+              y0: it.y + gy - h / 2,
+              x1: it.x + gx + w / 2,
+              y1: it.y + gy + h / 2,
+              boxes: [],
+              cx: it.x + gx,
+              cy: it.y + gy
+            };
+          }
+        }
+      }
+    }
   const ctx = env.ctx;
   const ghostPass = env.pass !== 'main';
   if (ghostPass && it.ghost === false) return null;
