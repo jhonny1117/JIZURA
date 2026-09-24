@@ -676,6 +676,10 @@ function bind() {
   $('snap').addEventListener('change', e => { S.project.timing.snap = e.target.checked; replan(); });
   $('btnResetTimes').addEventListener('click', () => { S.project.timing.lineTimes = {}; replan(); });
   $('audioFile').addEventListener('change', e => { const f = e.target.files && e.target.files[0]; if (f) loadAudioFile(f); });
+     $('danceFile').addEventListener('change', e => {
+    const f = e.target.files && e.target.files[0];
+    if (f) loadDanceFile(f);
+  });
   $('btnTap').addEventListener('click', () => (S.tap ? stopTap() : startTap()));
   $('tapBtn').addEventListener('click', tapNow);
   $('tapStop').addEventListener('click', () => { pause(); stopTap(); });
@@ -802,6 +806,35 @@ async function loadAudioFile(f) {
   } catch (err) { $('audioName').textContent = '読み込めませんでした: ' + err.message; S.audio = null; return false; }
 }
 
+   /* MMD dance video */
+function loadDanceFile(f) {
+  if (S.danceURL) URL.revokeObjectURL(S.danceURL);
+
+  const url = URL.createObjectURL(f);
+  const video = document.createElement('video');
+
+  video.src = url;
+  video.muted = true;
+  video.playsInline = true;
+  video.preload = 'auto';
+  video.loop = true;
+
+  S.danceURL = url;
+  S.danceVideo = video;
+
+  $('danceName').textContent = '読み込み中…';
+
+  video.addEventListener('loadeddata', () => {
+    $('danceName').textContent =
+      `${f.name}（${J.fmtTime(video.duration)}）`;
+    S.need = true;
+  });
+
+  video.addEventListener('error', () => {
+    $('danceName').textContent = '動画を読み込めませんでした';
+    S.danceVideo = null;
+  });
+}
 /* ---------------- boot ---------------- */
 function boot() {
   S.project = loadLocal();
