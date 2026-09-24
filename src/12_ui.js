@@ -157,15 +157,10 @@ function draw() {
   const c = $('view'), ctx = c.getContext('2d');
   const t0 = performance.now();
 
-     // MMD dance videoをJIZURAの再生時間に同期
-  if (S.danceVideo && S.danceVideo.readyState >= 2 && S.danceVideo.duration) {
-    const vt = S.t % S.danceVideo.duration;
+   function draw() {
+  const c = $('view'), ctx = c.getContext('2d');
+  const t0 = performance.now();
 
-    if (Math.abs(S.danceVideo.currentTime - vt) > 0.05) {
-      S.danceVideo.currentTime = vt;
-    }
-  }
-   
   S.renderer.frame(ctx, S.plan, S.t, { scale: c.width / S.plan.W, fast: S.playing && S.slow });
   const dt = performance.now() - t0;
   S.slow = S.playing ? (dt > 30 ? true : dt < 14 ? false : S.slow) : false;
@@ -193,16 +188,49 @@ function updateTimeUI() {
 function play() {
   if (S.audio) AP.play(S.audio.buffer, S.t);
   else S.t0 = performance.now() - S.t * 1000;
-  S.playing = true; $('btnPlay').textContent = '❚❚'; $('btnPlay').setAttribute('aria-label', '一時停止');
+
+  // MMD動画も再生
+  if (S.danceVideo && S.danceVideo.readyState >= 2) {
+    const vt = S.danceVideo.duration ? (S.t % S.danceVideo.duration) : S.t;
+    if (Math.abs(S.danceVideo.currentTime - vt) > 0.15) {
+      S.danceVideo.currentTime = vt;
+    }
+    S.danceVideo.play().catch(() => {});
+  }
+
+  S.playing = true;
+  $('btnPlay').textContent = 'Ⅱ';
+  $('btnPlay').setAttribute('aria-label', '一時停止');
 }
+
 function pause() {
-  S.playing = false; AP.stop();
-  $('btnPlay').textContent = '▶'; $('btnPlay').setAttribute('aria-label', '再生'); S.need = true;
+  S.playing = false;
+  AP.stop();
+
+  // MMD動画も一時停止
+  if (S.danceVideo) {
+    S.danceVideo.pause();
+  }
+
+  $('btnPlay').textContent = '▶';
+  $('btnPlay').setAttribute('aria-label', '再生');
+  S.need = true;
 }
+
 function seek(t) {
   S.t = J.clamp(t, 0, Math.max(0, S.plan.duration - 1e-3));
-  if (S.audio) { if (S.playing) AP.play(S.audio.buffer, S.t); }
-  else S.t0 = performance.now() - S.t * 1000;
+
+  if (S.audio) {
+    if (S.playing) AP.play(S.audio.buffer, S.t);
+  } else {
+    S.t0 = performance.now() - S.t * 1000;
+  }
+
+  // MMD動画も同じ位置へ移動
+  if (S.danceVideo && S.danceVideo.readyState >= 1 && S.danceVideo.duration) {
+    S.danceVideo.currentTime = S.t % S.danceVideo.duration;
+  }
+
   S.need = true;
 }
 
