@@ -821,6 +821,7 @@ function loadDanceFile(f) {
 
   S.danceURL = url;
   S.danceVideo = video;
+   J._danceVideo = video;
 
   $('danceName').textContent = '読み込み中…';
 
